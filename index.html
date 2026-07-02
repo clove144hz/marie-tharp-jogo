@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marie Tharp - Mapeamento Oceânico</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  
+    <div class="ocean-background">
+        <div class="wave"></div>
+        <div class="wave"></div>
+        <div class="wave"></div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+    </div>
+
+
+    <div class="particle-container" id="particleContainer"></div>
+
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <div class="container">
+
+        <header>
+            <h1>
+                <span class="emoji-wave">🌊</span>
+                Marie Tharp - Mapeamento Oceânico
+            </h1>
+            <p class="subtitle">Converta dados de sonar (θ, r) em coordenadas cartesianas (X, Y) para mapear o fundo do oceano</p>
+            <div class="header-controls">
+                <span class="difficulty-badge easy active" data-difficulty="easy">🟢 Fácil</span>
+                <span class="difficulty-badge medium" data-difficulty="medium">🟡 Médio</span>
+                <span class="difficulty-badge hard" data-difficulty="hard">🔴 Difícil</span>
+                <button id="tutorialBtn" class="btn btn-purple" style="min-width:auto; padding:4px 15px; font-size:0.8rem;">📖 Tutorial</button>
+                <button id="resetStatsBtn" class="btn btn-danger" style="min-width:auto; padding:4px 15px; font-size:0.8rem;">🔄 Resetar</button>
+            </div>
+        </header>
+
+
+        <div class="game-layout">
+            <!-- Radar Polar -->
+            <div class="radar-container">
+                <div class="container-title">
+                    📡 Dados do Sonar (Coordenadas Polares)
+                    <span class="badge">θ + r</span>
+                </div>
+                <canvas id="radarCanvas" width="700" height="700"></canvas>
+
+                <div class="controls">
+                    <button id="startBtn" class="btn btn-primary">▶ Iniciar <span class="shortcut">Espaço</span></button>
+                    <button id="stopBtn" class="btn btn-danger" disabled>⏹ Parar <span class="shortcut">Espaço</span></button>
+                    <button id="newTargetBtn" class="btn btn-success">🌊 Nova Leitura <span class="shortcut">N</span></button>
+                    <button id="hintBtn" class="btn btn-warning">💡 Dica <span class="shortcut">H</span></button>
+                </div>
+
+                <div class="status-bar">
+                    <div class="status-item">
+                        <span class="label">Status</span>
+                        <span id="statusText" class="value">🟢 Pronto</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="label">Ângulo (θ)</span>
+                        <span id="angleText" class="value">0°</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="label">Profundidade (r)</span>
+                        <span id="depthText" class="value">0m</span>
+                    </div>
+                </div>
+
+                <div class="conversion-box">
+                    📐 Dados do Sonar:
+                    <span class="highlight-num" id="polarAngleDisplay">--°</span>
+                    <span class="precision-note">⭐ MAIS PRECISO</span>
+                    <span style="opacity:0.5; margin:0 5px;">|</span>
+                    <span class="highlight-num" id="polarDepthDisplay">--m</span>
+                    <span class="precision-note">⭐ MAIS PRECISO</span>
+                    <span style="opacity:0.5; margin-left:10px; font-size:0.7rem;">
+                        (Use estes valores para o cálculo!)
+                    </span>
+                </div>
+
+                <div id="radarMessage" class="message info">
+                    <span class="emoji">💡</span> Use os dados do sonar para mapear o ponto no mapa!
+                </div>
+            </div>
+
+ 
+            <div class="map-container">
+                <div class="container-title">
+                    🗺️ Mapa Batimétrico (Coordenadas X, Y)
+                    <span class="badge">X + Y</span>
+                </div>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-dot target"></div>
+                        <span>Ponto Submarino (invisível)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot hit"></div>
+                        <span>Seu Acerto</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot miss"></div>
+                        <span>Seu Erro</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot polar"></div>
+                        <span>Dica</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot preview"></div>
+                        <span>Prévia</span>
+                    </div>
+                </div>
+                <canvas id="mapCanvas" width="700" height="700"></canvas>
+
+
+                <div class="calculator">
+                    <div class="calculator-title">
+                        🧮 Calculadora de Conversão Polar → Cartesiana
+                        <span style="font-size:0.7rem; opacity:0.5; font-weight:normal;">(Use os dados do sonar)</span>
+                    </div>
+                    <div class="calculator-grid">
+                        <div class="calc-group">
+                            <label>📐 Ângulo (θ) em graus</label>
+                            <input type="number" id="calcAngle" placeholder="Ex: 201.8" step="0.1">
+                        </div>
+                        <div class="calc-group">
+                            <label>📏 Profundidade (r) em metros</label>
+                            <input type="number" id="calcDepth" placeholder="Ex: 201.8" step="0.1">
+                        </div>
+                        <div class="calc-group">
+                            <label>🔄 Ângulo em Radianos</label>
+                            <div class="result" id="calcRadians">--</div>
+                        </div>
+                        <div class="calc-group">
+                            <label>📊 Seno do ângulo</label>
+                            <div class="result" id="calcSin">--</div>
+                        </div>
+                        <div class="calc-group">
+                            <label>📊 Cosseno do ângulo</label>
+                            <div class="result" id="calcCos">--</div>
+                        </div>
+                        <div class="calc-group">
+                            <label>📊 Tangente do ângulo</label>
+                            <div class="result" id="calcTan">--</div>
+                        </div>
+                        <div class="calc-buttons">
+                            <button id="calcBtn" class="btn btn-calc">🧮 Calcular</button>
+                            <button id="calcFillBtn" class="btn btn-primary" style="min-width:80px; padding:6px 16px; font-size:0.75rem;">📥 Preencher Dados</button>
+                            <button id="calcClearBtn" class="btn btn-danger" style="min-width:80px; padding:6px 16px; font-size:0.75rem;">🗑️ Limpar</button>
+                        </div>
+                        <div class="calc-result-box" id="calcResult">
+                            📍 Resultado: <span class="highlight">X = --</span> , <span class="highlight">Y = --</span>
+                            <span style="opacity:0.5; margin-left:10px; font-size:0.8rem;">
+                                (Clique em "Preencher Dados" para usar os valores do sonar)
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+
+                <div class="coord-input-area">
+                    <div class="coord-group">
+                        <label>X =</label>
+                        <input type="number" id="coordX" placeholder="0" step="1">
+                        <label>m</label>
+                    </div>
+                    <div class="coord-group">
+                        <label>Y =</label>
+                        <input type="number" id="coordY" placeholder="0" step="1">
+                        <label>m</label>
+                    </div>
+                    <span class="preview-text" id="previewCoords">📍 (-- , --)</span>
+                    <button id="previewBtn" class="btn btn-primary" style="min-width:60px; padding:6px 12px; font-size:0.75rem;">👁️ Prévia</button>
+                    <button id="confirmCoordBtn" class="btn btn-success" style="min-width:60px; padding:6px 12px; font-size:0.75rem;">✅ Confirmar</button>
+                </div>
+
+                <div class="status-bar">
+                    <div class="status-item">
+                        <span class="label">🎯 Pontos</span>
+                        <span id="scoreText" class="value hit">0</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="label">✅ Acertos</span>
+                        <span id="hitsText" class="value hit">0</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="label">❌ Erros</span>
+                        <span id="missesText" class="value miss">0</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="label">📊 Precisão</span>
+                        <span id="accuracyText" class="value">0%</span>
+                    </div>
+                </div>
+
+                <div class="coordinate-hint">
+                    🎯 Digite suas coordenadas calculadas ou clique no mapa
+                </div>
+
+                <div id="mapMessage" class="message info">
+                    <span class="emoji">🔍</span> Converta (θ, r) → (X, Y) e clique no mapa ou digite os valores!
+                </div>
+
+                <!-- Histórico -->
+                <div class="history-container" id="historyContainer">
+                    <div class="history-empty">📝 Nenhum mapeamento registrado ainda</div>
+                </div>
+            </div>
+        </div>
+
+      
+        <div class="info-panel">
+            <div class="info-card">
+                <h3>🗺️ Sobre Marie Tharp</h3>
+                <p>
+                    <strong>Marie Tharp</strong> (1920-2006) foi uma geóloga e cartógrafa oceânica 
+                    que revolucionou a ciência ao mapear o fundo do oceano. Usando dados de sonar 
+                    (coordenadas polares), ela converteu para coordenadas cartesianas e descobriu 
+                    a <strong>Dorsal Meso-Atlântica</strong>, provando a teoria da deriva continental.
+                </p>
+                <div class="highlight">
+                    💡 <strong>O Desafio:</strong> Converta dados de sonar (ângulo + profundidade) 
+                    em coordenadas cartesianas para mapear o fundo do oceano como Marie Tharp fez!
+                </div>
+            </div>
+            <div class="info-card">
+                <h3>📐 Conversão Polar → Cartesiana</h3>
+                <p>
+                    <strong>Dados do Sonar (Coordenadas Polares):</strong><br>
+                    • <strong>Ângulo (θ)</strong>: Direção do sonar em graus (0° a 360°)<br>
+                    • <strong>Raio (r)</strong>: Profundidade em metros (0 a 600m)<br><br>
+                    <strong>Mapa Batimétrico (Coordenadas Cartesianas):</strong><br>
+                    • <strong>X</strong>: Posição horizontal (metros)<br>
+                    • <strong>Y</strong>: Posição vertical (metros)<br><br>
+                    <span style="font-family:monospace;color:#4fc3ff;">
+                        X = r × cos(θ)<br>
+                        Y = r × sin(θ)
+                    </span>
+                    <br><br>
+                    <span style="font-size:0.85rem; opacity:0.7;">
+                        ⚠️ Lembre-se: θ deve ser convertido para radianos!
+                    </span>
+                </p>
+                <div class="highlight">
+                    💡 Marie Tharp usava exatamente essa conversão para transformar<br>
+                    dados de sonar em mapas do fundo do oceano!
+                </div>
+            </div>
+            <div class="info-card">
+                <h3>📊 Suas Estatísticas</h3>
+                <p>
+                    <strong>Melhor Sequência:</strong> <span id="bestStreakText" style="color:#4fc3ff;">0</span><br>
+                    <strong>Total de Tentativas:</strong> <span id="totalAttemptsText" style="color:#4fc3ff;">0</span><br>
+                    <strong>Pontos por Minuto:</strong> <span id="ppmText" style="color:#4fc3ff;">0</span><br>
+                    <strong>Erro Médio:</strong> <span id="avgErrorText" style="color:#4fc3ff;">0px</span>
+                </p>
+                <div class="highlight" id="weaknessDisplay">
+                    💡 Faça mais mapeamentos para identificar seus padrões de erro
+                </div>
+            </div>
+        </div>
+    </div>
+
+  
+    <div class="tutorial-overlay" id="tutorialOverlay">
+        <div class="tutorial-content">
+            <h2>📖 Tutorial - Mapeamento Oceânico</h2>
+            <div class="step-counter" id="stepCounter">Passo 1 de 5</div>
+            <div class="step-text" id="stepText">
+                Bem-vindo ao Mapeamento Oceânico de Marie Tharp! 🗺️<br>
+                Você vai aprender a converter dados de sonar (θ, r) em coordenadas cartesianas (X, Y).
+            </div>
+            <div class="highlight-box" id="stepHighlight">
+                💡 O ângulo θ é medido a partir do norte (0°) no sentido horário
+            </div>
+            <div class="tutorial-nav">
+                <button id="tutorialPrevBtn" class="btn btn-primary" disabled>⬅ Anterior</button>
+                <button id="tutorialNextBtn" class="btn btn-success">Próximo ➡</button>
+                <button id="tutorialCloseBtn" class="btn btn-danger">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+   
+    <script src="js/game.js"></script>
+</body>
+</html>
